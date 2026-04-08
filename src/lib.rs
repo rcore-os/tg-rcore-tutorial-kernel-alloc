@@ -123,7 +123,8 @@ unsafe impl GlobalAlloc for Global {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // SAFETY: 通过 heap_mut() 访问分配器，在单处理器环境下不会有并发的分配请求。
         // layout 的有效性由调用者（Rust 的 alloc 机制）保证。
-        if let Ok((ptr, _)) = heap_mut().allocate_layout::<u8>(layout) {
+        // customizable buddy 的 allocate_layout 函数有 bug，直接使用 allocate 函数进行内存分配
+        if let Ok((ptr, _)) = HEAP.lock().allocate::<u8>(layout.align(), NonZero::new(layout.size()).unwrap()) {
             ptr.as_ptr()
         } else {
             handle_alloc_error(layout)
